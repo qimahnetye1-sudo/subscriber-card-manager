@@ -1,0 +1,9 @@
+import { describe, expect, it } from "vitest";
+import { allocationBlockReason, getReportStats, monthlyAllocationCount, parseCardCodes } from "../lib/cards/utils";
+
+describe("بطاقات المخزون", () => {
+  it("يستخرج الرموز الرقمية الفريدة فقط من اللصق متعدد الأسطر", () => { expect(parseCardCodes("123\nabc\n123\n\n4567\n12-34")).toEqual({ codes: ["123", "4567"], invalidCount: 2, duplicateCount: 1 }); });
+  it("يحسب تخصيصات الشهر الحالي دون احتساب الأشهر السابقة", () => { const now = new Date(); const old = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString(); const current = new Date(now.getFullYear(), now.getMonth(), 2).toISOString(); expect(monthlyAllocationCount([{ id: "a", code: "1", packageId: "p", subscriberId: "s", isFrozen: true, sentAt: current }, { id: "b", code: "2", packageId: "p", subscriberId: "s", isFrozen: true, sentAt: old }], "s", now)).toBe(1); });
+  it("يمنع تخصيص بطاقة مجمدة أو تجاوز الحد الشهري", () => { const now = new Date(); const frozen = { id: "f", code: "1", packageId: "p", subscriberId: "s", isFrozen: true, sentAt: now.toISOString() }; expect(allocationBlockReason(frozen, [frozen], "other", now)).toContain("مجمدة"); const cards = [1, 2, 3].map((number) => ({ id: `${number}`, code: `${number}`, packageId: "p", subscriberId: "s", isFrozen: true, sentAt: now.toISOString() })); const fresh = { id: "x", code: "4", packageId: "p", subscriberId: null, isFrozen: false, sentAt: null }; expect(allocationBlockReason(fresh, cards, "s", now)).toContain("الحد الشهري"); });
+  it("يحسب الإيراد من البطاقات المخصصة فقط", () => { const stats = getReportStats([], [{ id: "p", name: "10GB", price: 5, sizeGb: 10, createdAt: "" }], [{ id: "a", code: "1", packageId: "p", subscriberId: "s", isFrozen: true, sentAt: new Date().toISOString() }, { id: "b", code: "2", packageId: "p", subscriberId: null, isFrozen: false, sentAt: null }]); expect(stats.totalRevenue).toBe(5); expect(stats.availableCards).toBe(1); });
+});

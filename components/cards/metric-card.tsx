@@ -1,0 +1,2 @@
+import { Text, View } from "react-native";
+export function MetricCard({ label, value, tone = "teal" }: { label: string; value: string | number; tone?: "teal" | "navy" | "sand" | "gold" }) { const colors = { teal: "#087E8B", navy: "#0E2A47", sand: "#C88719", gold: "#B93838" }; return <View className="flex-1 rounded-2xl bg-surface p-3" style={{ borderRightWidth: 4, borderRightColor: colors[tone], minWidth: 130 }}><Text className="text-right text-xs text-muted">{label}</Text><Text className="mt-1 text-right text-2xl font-bold text-foreground">{value}</Text></View>; }
