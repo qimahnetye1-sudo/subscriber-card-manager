@@ -1,4 +1,4 @@
-import type { Card, Package, ReportStats, Subscriber } from "./types";
+import type { AuditLog, Card, DateRange, Package, ReportStats, Subscriber } from "./types";
 
 export function normalizePhone(value: string) {
   return value.replace(/[\s()-]/g, "").trim();
@@ -65,4 +65,34 @@ export function formatCurrency(value: number) {
 export function formatDate(value: string | null) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("ar", { year: "numeric", month: "long", day: "numeric" }).format(new Date(value));
+}
+
+function startOfDay(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function endOfDay(value: string) {
+  const date = new Date(`${value}T23:59:59.999`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function isWithinDateRange(value: string, range: DateRange) {
+  const date = new Date(value);
+  const from = range.from ? startOfDay(range.from) : null;
+  const to = range.to ? endOfDay(range.to) : null;
+  if (Number.isNaN(date.getTime())) return false;
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+  return true;
+}
+
+export function auditLogsInRange(logs: AuditLog[], range: DateRange) {
+  return logs.filter((log) => isWithinDateRange(log.createdAt, range));
+}
+
+export function dateRangeLabel(range: DateRange) {
+  if (!range.from && !range.to) return "كل الفترات";
+  if (range.from && range.to) return `من ${range.from} إلى ${range.to}`;
+  return range.from ? `من ${range.from}` : `حتى ${range.to}`;
 }

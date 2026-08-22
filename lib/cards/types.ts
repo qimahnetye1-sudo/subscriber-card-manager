@@ -25,10 +25,33 @@ export type Card = {
   sentAt: string | null;
 };
 
+export type AuditLog = {
+  id: string;
+  action: "allocation";
+  createdAt: string;
+  cardId: string;
+  packageId: string;
+  subscriberId: string;
+  codeSnapshot: string;
+  subscriberName: string;
+  subscriberPhone: string;
+  subscriberLocation: string;
+  subscriberNotes: string;
+  packageName: string;
+  packageSizeGb: number;
+  packagePrice: number;
+};
+
+export type DateRange = {
+  from: string;
+  to: string;
+};
+
 export type CardData = {
   subscribers: Subscriber[];
   packages: Package[];
   cards: Card[];
+  auditLogs: AuditLog[];
 };
 
 export type SubscriberDraft = Omit<Subscriber, "id" | "monthlyCount" | "createdAt">;

@@ -56,6 +56,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={26} name="chart.bar.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="audit"
+        options={{
+          title: "السجل",
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="list.bullet.rectangle.fill" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

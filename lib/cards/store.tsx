@@ -2,10 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { allocationBlockReason, getReportStats, monthlyAllocationCount, normalizePhone, parseCardCodes } from "./utils";
-import type { CardData, PackageDraft, SubscriberDraft } from "./types";
+import type { AuditLog, CardData, PackageDraft, SubscriberDraft } from "./types";
 
 const STORAGE_KEY = "subscriber-card-manager-data-v1";
-const INITIAL_DATA: CardData = { subscribers: [], packages: [], cards: [] };
+const INITIAL_DATA: CardData = { subscribers: [], packages: [], cards: [], auditLogs: [] };
 
 type OperationResult = { ok: true; message: string } | { ok: false; message: string };
 
@@ -32,7 +32,10 @@ export function CardsProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((stored) => {
-        if (stored) setData(JSON.parse(stored) as CardData);
+        if (stored) {
+          const parsed = JSON.parse(stored) as Partial<CardData>;
+          setData({ subscribers: parsed.subscribers ?? [], packages: parsed.packages ?? [], cards: parsed.cards ?? [], auditLogs: parsed.auditLogs ?? [] });
+        }
       })
       .finally(() => setIsReady(true));
   }, []);
@@ -83,9 +86,16 @@ export function CardsProvider({ children }: PropsWithChildren) {
     if (blocked) return { ok: false, message: blocked };
     const currentMonth = monthlyAllocationCount(data.cards, subscriberId);
     const now = new Date().toISOString();
-    setData((current) => ({ ...current, cards: current.cards.map((item) => item.id === cardId ? { ...item, subscriberId, isFrozen: true, sentAt: now } : item), subscribers: current.subscribers.map((item) => item.id === subscriberId ? { ...item, monthlyCount: currentMonth + 1 } : item) }));
+    const packageItem = data.packages.find((item) => item.id === card.packageId);
+    if (!packageItem) return { ok: false, message: "تعذر العثور على الباقة الخاصة بالبطاقة." };
+    const auditLog: AuditLog = {
+      id: createId("audit"), action: "allocation", createdAt: now, cardId: card.id, packageId: packageItem.id, subscriberId,
+      codeSnapshot: card.code, subscriberName: subscriber.name, subscriberPhone: subscriber.phone, subscriberLocation: subscriber.location,
+      subscriberNotes: subscriber.notes, packageName: packageItem.name, packageSizeGb: packageItem.sizeGb, packagePrice: packageItem.price,
+    };
+    setData((current) => ({ ...current, cards: current.cards.map((item) => item.id === cardId ? { ...item, subscriberId, isFrozen: true, sentAt: now } : item), subscribers: current.subscribers.map((item) => item.id === subscriberId ? { ...item, monthlyCount: currentMonth + 1 } : item), auditLogs: [auditLog, ...current.auditLogs] }));
     return { ok: true, message: "تم تخصيص البطاقة وتجميدها بنجاح." };
-  }, [data.cards, data.subscribers]);
+  }, [data.cards, data.packages, data.subscribers]);
 
   const getMonthlyCount = useCallback((subscriberId: string) => monthlyAllocationCount(data.cards, subscriberId), [data.cards]);
   const stats = useMemo(() => getReportStats(data.subscribers, data.packages, data.cards), [data]);
