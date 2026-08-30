@@ -26,6 +26,7 @@ const MAPPING = {
   "phone.fill": "phone",
   "tray.full.fill": "inventory-2",
   "list.bullet.rectangle.fill": "fact-check",
+  "gearshape.fill": "settings",
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",

@@ -17,6 +17,7 @@ type CardsContextValue = CardData & {
   addCodes: (packageId: string, rawCodes: string) => OperationResult;
   allocateCard: (subscriberId: string, cardId: string) => OperationResult;
   getMonthlyCount: (subscriberId: string) => number;
+  replaceData: (nextData: CardData) => void;
 };
 
 const CardsContext = createContext<CardsContextValue | null>(null);
@@ -98,8 +99,9 @@ export function CardsProvider({ children }: PropsWithChildren) {
   }, [data.cards, data.packages, data.subscribers]);
 
   const getMonthlyCount = useCallback((subscriberId: string) => monthlyAllocationCount(data.cards, subscriberId), [data.cards]);
+  const replaceData = useCallback((nextData: CardData) => setData({ subscribers: nextData.subscribers, packages: nextData.packages, cards: nextData.cards, auditLogs: nextData.auditLogs }), []);
   const stats = useMemo(() => getReportStats(data.subscribers, data.packages, data.cards), [data]);
-  const value = useMemo(() => ({ ...data, isReady, stats, addSubscriber, addPackage, addCodes, allocateCard, getMonthlyCount }), [data, isReady, stats, addSubscriber, addPackage, addCodes, allocateCard, getMonthlyCount]);
+  const value = useMemo(() => ({ ...data, isReady, stats, addSubscriber, addPackage, addCodes, allocateCard, getMonthlyCount, replaceData }), [data, isReady, stats, addSubscriber, addPackage, addCodes, allocateCard, getMonthlyCount, replaceData]);
   return <CardsContext.Provider value={value}>{children}</CardsContext.Provider>;
 }
 

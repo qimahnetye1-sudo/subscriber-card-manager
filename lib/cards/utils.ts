@@ -91,6 +91,12 @@ export function auditLogsInRange(logs: AuditLog[], range: DateRange) {
   return logs.filter((log) => isWithinDateRange(log.createdAt, range));
 }
 
+export function auditLogsSearch(logs: AuditLog[], query: string) {
+  const normalized = query.trim().toLocaleLowerCase();
+  if (!normalized) return logs;
+  return logs.filter((log) => log.subscriberName.toLocaleLowerCase().includes(normalized) || log.codeSnapshot.toLocaleLowerCase().includes(normalized));
+}
+
 export function dateRangeLabel(range: DateRange) {
   if (!range.from && !range.to) return "كل الفترات";
   if (range.from && range.to) return `من ${range.from} إلى ${range.to}`;
