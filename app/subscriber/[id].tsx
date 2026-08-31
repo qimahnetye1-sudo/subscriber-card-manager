@@ -11,9 +11,10 @@ import { availableCardsForPackage, formatDate } from "@/lib/cards/utils";
 export default function SubscriberDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { subscribers, packages, cards, getMonthlyCount, allocateCard, isReady } = useCards();
+  const { subscribers, packages, cards, settings, getMonthlyCount, allocateCard, isReady } = useCards();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [allocatedCode, setAllocatedCode] = useState<string | null>(null);
+  const [allocatedContext, setAllocatedContext] = useState<{ category: string } | null>(null);
   const subscriber = subscribers.find((item) => item.id === id);
   const available = useMemo(
     () => packages.flatMap((item) => availableCardsForPackage(cards, item.id).map((card) => ({ ...card, packageName: item.name, sizeGb: item.sizeGb }))),
@@ -31,6 +32,7 @@ export default function SubscriberDetail() {
     if (!result.ok) return Alert.alert("لا يمكن التخصيص", result.message);
     setPickerOpen(false);
     setAllocatedCode(card?.code ?? null);
+    setAllocatedContext(card ? { category: card.packageName } : null);
   };
 
   return (
@@ -65,8 +67,8 @@ export default function SubscriberDetail() {
       <Modal visible={!!allocatedCode} transparent animationType="fade" onRequestClose={() => setAllocatedCode(null)}>
         <View style={styles.centerBackdrop}><View style={styles.successSheet}>
           <Text style={styles.successTitle}>تم تخصيص البطاقة</Text><Text style={styles.successCode}>{allocatedCode}</Text><Text style={styles.successText}>اختر طريقة إرسال الرمز الآن. بعد إغلاق هذه النافذة تبقى البطاقة مجمدة ولا يمكن تخصيصها مجددًا.</Text>
-          <View style={styles.shareGrid}><Pressable onPress={() => allocatedCode && sendCardSms(subscriber.phone, allocatedCode)} style={styles.share}><Text style={styles.shareText}>SMS</Text></Pressable><Pressable onPress={() => allocatedCode && shareCardViaWhatsApp(allocatedCode)} style={styles.share}><Text style={styles.shareText}>WhatsApp</Text></Pressable><Pressable onPress={() => allocatedCode && copyCardCode(allocatedCode)} style={styles.share}><Text style={styles.shareText}>نسخ</Text></Pressable></View>
-          <Pressable onPress={() => allocatedCode && shareCardWithSystem(allocatedCode)} style={styles.systemShare}><Text style={styles.systemShareText}>مشاركة عبر تطبيق آخر</Text></Pressable><Pressable onPress={() => setAllocatedCode(null)} style={styles.done}><Text style={styles.doneText}>تم</Text></Pressable>
+          <View style={styles.shareGrid}><Pressable onPress={() => allocatedCode && sendCardSms(subscriber.phone, allocatedCode, settings.cardMessageTemplate, allocatedContext ?? undefined)} style={styles.share}><Text style={styles.shareText}>SMS</Text></Pressable><Pressable onPress={() => allocatedCode && shareCardViaWhatsApp(allocatedCode, settings.cardMessageTemplate, allocatedContext ?? undefined)} style={styles.share}><Text style={styles.shareText}>WhatsApp</Text></Pressable><Pressable onPress={() => allocatedCode && copyCardCode(allocatedCode, settings.cardMessageTemplate, allocatedContext ?? undefined)} style={styles.share}><Text style={styles.shareText}>نسخ</Text></Pressable></View>
+          <Pressable onPress={() => allocatedCode && shareCardWithSystem(allocatedCode, settings.cardMessageTemplate, allocatedContext ?? undefined)} style={styles.systemShare}><Text style={styles.systemShareText}>مشاركة عبر تطبيق آخر</Text></Pressable><Pressable onPress={() => { setAllocatedCode(null); setAllocatedContext(null); }} style={styles.done}><Text style={styles.doneText}>تم</Text></Pressable>
         </View></View>
       </Modal>
     </ScreenContainer>

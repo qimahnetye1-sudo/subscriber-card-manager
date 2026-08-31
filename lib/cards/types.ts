@@ -47,11 +47,19 @@ export type DateRange = {
   to: string;
 };
 
+export type AppSettings = {
+  profileImageUri: string | null;
+  cardMessageTemplate: string;
+};
+
+export const DEFAULT_CARD_MESSAGE_TEMPLATE = "مرحباً! كرتك: {card} | فئة: {category} | شبكة: {network} - {wallet}";
+
 export type CardData = {
   subscribers: Subscriber[];
   packages: Package[];
   cards: Card[];
   auditLogs: AuditLog[];
+  settings: AppSettings;
 };
 
 export type SubscriberDraft = Omit<Subscriber, "id" | "monthlyCount" | "createdAt">;

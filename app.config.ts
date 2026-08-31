@@ -64,7 +64,6 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
       {
         action: "VIEW",
@@ -93,17 +92,10 @@ const config: ExpoConfig = {
       }
     ],
     [
-      "expo-audio",
+      "expo-image-picker",
       {
-        microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
-      },
-    ],
-    [
-      "expo-video",
-      {
-        supportsBackgroundPlayback: true,
-        supportsPictureInPicture: true,
-      },
+        photosPermission: "نحتاج إلى اختيار صورة الملف الشخصي لإظهارها في كشف الحساب."
+      }
     ],
     [
       "expo-splash-screen",
