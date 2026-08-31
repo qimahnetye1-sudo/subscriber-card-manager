@@ -68,12 +68,14 @@ export function formatDate(value: string | null) {
 }
 
 function startOfDay(value: string) {
-  const date = new Date(`${value}T00:00:00`);
+  const normalized = value.trim().replace(/\//g, "-");
+  const date = new Date(`${normalized}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function endOfDay(value: string) {
-  const date = new Date(`${value}T23:59:59.999`);
+  const normalized = value.trim().replace(/\//g, "-");
+  const date = new Date(`${normalized}T23:59:59.999`);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -95,6 +97,26 @@ export function auditLogsSearch(logs: AuditLog[], query: string) {
   const normalized = query.trim().toLocaleLowerCase();
   if (!normalized) return logs;
   return logs.filter((log) => log.subscriberName.toLocaleLowerCase().includes(normalized) || log.codeSnapshot.toLocaleLowerCase().includes(normalized));
+}
+
+export type QuickPeriod = "today" | "last7" | "currentMonth" | "previousMonth" | "custom";
+
+function padDatePart(value: number) { return String(value).padStart(2, "0"); }
+
+export function formatDateInput(date: Date) {
+  return `${date.getFullYear()}/${padDatePart(date.getMonth() + 1)}/${padDatePart(date.getDate())}`;
+}
+
+export function getQuickDateRange(period: Exclude<QuickPeriod, "custom">, reference = new Date()): DateRange {
+  const end = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate());
+  let start = new Date(end);
+  if (period === "last7") start.setDate(start.getDate() - 6);
+  if (period === "currentMonth") start = new Date(end.getFullYear(), end.getMonth(), 1);
+  if (period === "previousMonth") {
+    start = new Date(end.getFullYear(), end.getMonth() - 1, 1);
+    end.setTime(new Date(end.getFullYear(), end.getMonth(), 0).getTime());
+  }
+  return { from: formatDateInput(start), to: formatDateInput(end) };
 }
 
 export function dateRangeLabel(range: DateRange) {
