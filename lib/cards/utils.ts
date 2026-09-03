@@ -44,7 +44,10 @@ export function getReportStats(subscribers: Subscriber[], packages: Package[], c
   const allocated = cards.filter((card) => card.isFrozen && card.subscriberId);
   const packageMap = new Map(packages.map((item) => [item.id, item]));
   const totalRevenue = allocated.reduce((sum, card) => sum + (packageMap.get(card.packageId)?.price ?? 0), 0);
-  const monthlyAllocated = allocated.filter((card) => isCurrentCalendarMonth(card.sentAt)).length;
+  const usedGb = allocated.reduce((sum, card) => sum + (packageMap.get(card.packageId)?.sizeGb ?? 0), 0);
+  const monthlyAllocatedCards = allocated.filter((card) => isCurrentCalendarMonth(card.sentAt));
+  const monthlyAllocated = monthlyAllocatedCards.length;
+  const monthlyUsedGb = monthlyAllocatedCards.reduce((sum, card) => sum + (packageMap.get(card.packageId)?.sizeGb ?? 0), 0);
 
   return {
     totalSubscribers: subscribers.length,
@@ -55,6 +58,8 @@ export function getReportStats(subscribers: Subscriber[], packages: Package[], c
     totalRevenue,
     averagePackagePrice: packages.length ? packages.reduce((sum, item) => sum + item.price, 0) / packages.length : 0,
     monthlyAllocated,
+    usedGb,
+    monthlyUsedGb,
   };
 }
 

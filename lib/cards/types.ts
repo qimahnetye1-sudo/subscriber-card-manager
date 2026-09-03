@@ -74,4 +74,6 @@ export type ReportStats = {
   totalRevenue: number;
   averagePackagePrice: number;
   monthlyAllocated: number;
+  usedGb: number;
+  monthlyUsedGb: number;
 };

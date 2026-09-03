@@ -53,7 +53,6 @@ export function CardsProvider({ children }: PropsWithChildren) {
     if (!name) return { ok: false, message: "اسم المشترك مطلوب." };
     if (!phone) return { ok: false, message: "رقم الهاتف مطلوب." };
     if (!/^\+?\d{7,15}$/.test(phone)) return { ok: false, message: "أدخل رقم هاتف صالحًا." };
-    if (data.subscribers.some((item) => normalizePhone(item.phone) === phone && item.id !== existingId)) return { ok: false, message: "رقم الهاتف مسجل لمشترك آخر." };
 
     setData((current) => {
       if (existingId) return { ...current, subscribers: current.subscribers.map((item) => item.id === existingId ? { ...item, ...draft, name, phone } : item) };
