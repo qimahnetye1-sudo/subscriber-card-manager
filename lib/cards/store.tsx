@@ -2,11 +2,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { allocationBlockReason, getReportStats, monthlyAllocationCount, normalizePhone, parseCardCodes } from "./utils";
-import { DEFAULT_CARD_MESSAGE_TEMPLATE } from "./types";
+import { DEFAULT_CARD_MESSAGE_TEMPLATE, DEFAULT_REPORT_TITLE, DEFAULT_SEND_SECTIONS } from "./types";
 import type { AppSettings, AuditLog, CardData, PackageDraft, SubscriberDraft } from "./types";
 
 const STORAGE_KEY = "subscriber-card-manager-data-v1";
-const INITIAL_DATA: CardData = { subscribers: [], packages: [], cards: [], auditLogs: [], settings: { profileImageUri: null, cardMessageTemplate: DEFAULT_CARD_MESSAGE_TEMPLATE } };
+const INITIAL_DATA: CardData = { subscribers: [], packages: [], cards: [], auditLogs: [], settings: { profileImageUri: null, cardMessageTemplate: DEFAULT_CARD_MESSAGE_TEMPLATE, reportTitle: DEFAULT_REPORT_TITLE, sendSections: DEFAULT_SEND_SECTIONS } };
 
 type OperationResult = { ok: true; message: string } | { ok: false; message: string };
 
@@ -37,7 +37,7 @@ export function CardsProvider({ children }: PropsWithChildren) {
       .then((stored) => {
         if (stored) {
           const parsed = JSON.parse(stored) as Partial<CardData>;
-          setData({ subscribers: parsed.subscribers ?? [], packages: parsed.packages ?? [], cards: parsed.cards ?? [], auditLogs: parsed.auditLogs ?? [], settings: { ...INITIAL_DATA.settings, ...(parsed.settings ?? {}) } });
+          setData({ subscribers: parsed.subscribers ?? [], packages: parsed.packages ?? [], cards: parsed.cards ?? [], auditLogs: parsed.auditLogs ?? [], settings: { ...INITIAL_DATA.settings, ...(parsed.settings ?? {}), sendSections: { ...INITIAL_DATA.settings.sendSections, ...(parsed.settings?.sendSections ?? {}) } } });
         }
       })
       .finally(() => setIsReady(true));
@@ -100,7 +100,7 @@ export function CardsProvider({ children }: PropsWithChildren) {
   }, [data.cards, data.packages, data.subscribers]);
 
   const getMonthlyCount = useCallback((subscriberId: string) => monthlyAllocationCount(data.cards, subscriberId), [data.cards]);
-  const replaceData = useCallback((nextData: CardData) => setData({ subscribers: nextData.subscribers, packages: nextData.packages, cards: nextData.cards, auditLogs: nextData.auditLogs, settings: { ...INITIAL_DATA.settings, ...(nextData.settings ?? {}) } }), []);
+  const replaceData = useCallback((nextData: CardData) => setData({ subscribers: nextData.subscribers, packages: nextData.packages, cards: nextData.cards, auditLogs: nextData.auditLogs, settings: { ...INITIAL_DATA.settings, ...(nextData.settings ?? {}), sendSections: { ...INITIAL_DATA.settings.sendSections, ...(nextData.settings?.sendSections ?? {}) } } }), []);
   const updateSettings = useCallback((nextSettings: Partial<AppSettings>) => setData((current) => ({ ...current, settings: { ...current.settings, ...nextSettings } })), []);
   const stats = useMemo(() => getReportStats(data.subscribers, data.packages, data.cards), [data]);
   const value = useMemo(() => ({ ...data, isReady, stats, addSubscriber, addPackage, addCodes, allocateCard, getMonthlyCount, replaceData, updateSettings }), [data, isReady, stats, addSubscriber, addPackage, addCodes, allocateCard, getMonthlyCount, replaceData, updateSettings]);

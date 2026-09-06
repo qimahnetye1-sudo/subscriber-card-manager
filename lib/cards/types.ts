@@ -47,12 +47,18 @@ export type DateRange = {
   to: string;
 };
 
+export type SendSectionsState = { package: boolean; card: boolean; recipient: boolean; message: boolean };
+
 export type AppSettings = {
   profileImageUri: string | null;
   cardMessageTemplate: string;
+  reportTitle: string;
+  sendSections: SendSectionsState;
 };
 
 export const DEFAULT_CARD_MESSAGE_TEMPLATE = "مرحباً! كرتك: {card} | فئة: {category} | شبكة: {network} - {wallet}";
+export const DEFAULT_REPORT_TITLE = "التقرير التشغيلي للبطاقات";
+export const DEFAULT_SEND_SECTIONS = { package: true, card: false, recipient: true, message: false };
 
 export type CardData = {
   subscribers: Subscriber[];

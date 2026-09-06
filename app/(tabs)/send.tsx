@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { LoadingState } from "@/components/cards/loading-state";
@@ -10,16 +10,16 @@ import { availableCardsForPackage, normalizePhone } from "@/lib/cards/utils";
 import type { Subscriber } from "@/lib/cards/types";
 
 export default function SendScreen() {
-  const { subscribers, packages, cards, settings, allocateCard, isReady } = useCards();
+  const { subscribers, packages, cards, settings, updateSettings, allocateCard, isReady } = useCards();
   const [selectedPackageId, setSelectedPackageId] = useState("");
   const [selectedCardId, setSelectedCardId] = useState("");
   const [selectedSubscriberId, setSelectedSubscriberId] = useState("");
   const [manualPhone, setManualPhone] = useState("");
   const [recipientMode, setRecipientMode] = useState<"subscriber" | "phone">("subscriber");
-  const [showPackages, setShowPackages] = useState(false);
-  const [showCards, setShowCards] = useState(false);
-  const [showSubscribers, setShowSubscribers] = useState(false);
-  const [showMessage, setShowMessage] = useState(false);
+  const [showPackages, setShowPackages] = useState(settings.sendSections.package);
+  const [showCards, setShowCards] = useState(settings.sendSections.card);
+  const [showSubscribers, setShowSubscribers] = useState(settings.sendSections.recipient);
+  const [showMessage, setShowMessage] = useState(settings.sendSections.message);
   const [subscriberQuery, setSubscriberQuery] = useState("");
   const selectedPackage = packages.find((item) => item.id === selectedPackageId);
   const selectedCard = cards.find((item) => item.id === selectedCardId);
@@ -28,8 +28,10 @@ export default function SendScreen() {
   const filteredSubscribers = useMemo(() => { const query = subscriberQuery.trim().toLocaleLowerCase(); if (!query) return subscribers; return subscribers.filter((item) => item.name.toLocaleLowerCase().includes(query) || item.phone.includes(query)); }, [subscriberQuery, subscribers]);
   const recipientPhone = recipientMode === "subscriber" ? selectedSubscriber?.phone ?? "" : manualPhone;
   const canSend = !!selectedCard && !!recipientPhone && !!normalizePhone(recipientPhone);
+  useEffect(() => { if (isReady) { setShowPackages(settings.sendSections.package); setShowCards(settings.sendSections.card); setShowSubscribers(settings.sendSections.recipient); setShowMessage(settings.sendSections.message); } }, [isReady, settings.sendSections]);
   if (!isReady) return <LoadingState />;
 
+  const toggleSection = (key: "package" | "card" | "recipient" | "message", current: boolean, setter: (value: boolean) => void) => { const next = !current; setter(next); updateSettings({ sendSections: { ...settings.sendSections, [key]: next } }); };
   const choosePackage = (id: string) => { setSelectedPackageId(id); setSelectedCardId(""); setShowPackages(false); setShowCards(false); };
   const chooseSubscriber = (subscriber: Subscriber) => { setSelectedSubscriberId(subscriber.id); setManualPhone(subscriber.phone); setShowSubscribers(false); };
   const send = async (channel: "sms" | "whatsapp" | "system" | "copy") => {
@@ -40,13 +42,13 @@ export default function SendScreen() {
   };
 
   return <ScreenContainer className="px-4" containerClassName="bg-background"><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><ScreenHeader title="إرسال البطاقات" subtitle="اختر بطاقة ومستلمًا ثم أرسل الرسالة بالقالب المحفوظ" />
-    <CollapsibleHeader number="1" title="اختيار الباقة" summary={selectedPackage?.name || "حدد الباقة التي تحتوي على البطاقة"} expanded={showPackages} onPress={() => setShowPackages((value) => !value)} />
+    <CollapsibleHeader number="1" title="اختيار الباقة" summary={selectedPackage?.name || "حدد الباقة التي تحتوي على البطاقة"} expanded={showPackages} onPress={() => toggleSection("package", showPackages, setShowPackages)} />
     {showPackages ? <View style={styles.sectionBody}>{packages.length ? packages.map((item) => <Pressable key={item.id} onPress={() => choosePackage(item.id)} style={styles.option}><Text style={styles.optionText}>{item.name} · {item.sizeGb} GB</Text><Text style={styles.optionMeta}>{availableCardsForPackage(cards, item.id).length} متاحة</Text></Pressable>) : <Text style={styles.noOption}>أنشئ باقة من الإعدادات أولاً.</Text>}</View> : null}
-    <CollapsibleHeader number="2" title="اختيار البطاقة" summary={selectedCard?.code || "حدد رمز البطاقة المتاحة"} disabled={!selectedPackageId} expanded={showCards} onPress={() => selectedPackageId && setShowCards((value) => !value)} />
+    <CollapsibleHeader number="2" title="اختيار البطاقة" summary={selectedCard?.code || "حدد رمز البطاقة المتاحة"} disabled={!selectedPackageId} expanded={showCards} onPress={() => selectedPackageId && toggleSection("card", showCards, setShowCards)} />
     {showCards && selectedPackageId ? <View style={styles.sectionBody}>{availableCards.length ? availableCards.map((item) => <Pressable key={item.id} onPress={() => { setSelectedCardId(item.id); setShowCards(false); }} style={styles.option}><Text style={styles.optionText}>{item.code}</Text><Text style={styles.optionMeta}>متاحة للإرسال</Text></Pressable>) : <Text style={styles.noOption}>لا توجد بطاقات متاحة في هذه الباقة.</Text>}</View> : null}
-    <CollapsibleHeader number="3" title="تحديد المستلم" summary={selectedSubscriber ? `${selectedSubscriber.name} · ${selectedSubscriber.phone}` : recipientMode === "phone" ? manualPhone || "رقم يدوي" : "اختر مشتركًا"} expanded={showSubscribers} onPress={() => setShowSubscribers((value) => !value)} />
+    <CollapsibleHeader number="3" title="تحديد المستلم" summary={selectedSubscriber ? `${selectedSubscriber.name} · ${selectedSubscriber.phone}` : recipientMode === "phone" ? manualPhone || "رقم يدوي" : "اختر مشتركًا"} expanded={showSubscribers} onPress={() => toggleSection("recipient", showSubscribers, setShowSubscribers)} />
     {showSubscribers ? <View style={styles.sectionBody}><View style={styles.modeRow}><Pressable onPress={() => setRecipientMode("subscriber")} style={[styles.mode, recipientMode === "subscriber" && styles.modeSelected]}><Text style={[styles.modeText, recipientMode === "subscriber" && styles.modeTextSelected]}>من المشتركين</Text></Pressable><Pressable onPress={() => setRecipientMode("phone")} style={[styles.mode, recipientMode === "phone" && styles.modeSelected]}><Text style={[styles.modeText, recipientMode === "phone" && styles.modeTextSelected]}>رقم يدوي</Text></Pressable></View>{recipientMode === "subscriber" ? <><TextInput value={subscriberQuery} onChangeText={setSubscriberQuery} textAlign="right" placeholder="ابحث بالاسم أو رقم الهاتف" placeholderTextColor="#9AA6AF" style={styles.searchInput} />{filteredSubscribers.length ? filteredSubscribers.map((item) => <Pressable key={item.id} onPress={() => chooseSubscriber(item)} style={styles.option}><Text style={styles.optionText}>{item.name}</Text><Text style={styles.optionMeta}>{item.phone}</Text></Pressable>) : <Text style={styles.noOption}>{subscribers.length ? "لا توجد نتائج مطابقة للبحث." : "أضف مشتركًا من الإعدادات أولاً."}</Text>}</> : <TextInput value={manualPhone} onChangeText={setManualPhone} keyboardType="phone-pad" textAlign="right" placeholder="أدخل رقم الهاتف" placeholderTextColor="#9AA6AF" style={styles.input} />}</View> : null}
-    <Pressable onPress={() => setShowMessage((value) => !value)} style={styles.messageHeader}><View><Text style={styles.messageTitle}>معاينة الرسالة وقنوات الإرسال</Text><Text style={styles.messageSummary}>{canSend ? "الرسالة جاهزة للإرسال" : "اختر البطاقة والمستلم أولًا"}</Text></View><Text style={styles.chevron}>{showMessage ? "⌃" : "⌄"}</Text></Pressable>
+    <Pressable onPress={() => toggleSection("message", showMessage, setShowMessage)} style={styles.messageHeader}><View><Text style={styles.messageTitle}>معاينة الرسالة وقنوات الإرسال</Text><Text style={styles.messageSummary}>{canSend ? "الرسالة جاهزة للإرسال" : "اختر البطاقة والمستلم أولًا"}</Text></View><Text style={styles.chevron}>{showMessage ? "⌃" : "⌄"}</Text></Pressable>
     {showMessage ? <View style={styles.messageBody}><View style={styles.preview}><Text style={styles.previewTitle}>معاينة الرسالة</Text><Text style={styles.previewText}>{settings.cardMessageTemplate.replace("{card}", selectedCard?.code || "{card}").replace("{category}", selectedPackage?.name || "{category}")}</Text></View><View style={styles.sendGrid}><Pressable disabled={!canSend} onPress={() => send("sms")} style={[styles.sendButton, !canSend && styles.disabled]}><Text style={styles.sendText}>إرسال SMS</Text></Pressable><Pressable disabled={!canSend} onPress={() => send("whatsapp")} style={[styles.sendButton, styles.whatsapp, !canSend && styles.disabled]}><Text style={styles.sendText}>WhatsApp</Text></Pressable><Pressable disabled={!canSend} onPress={() => send("system")} style={[styles.outlineButton, !canSend && styles.disabled]}><Text style={styles.outlineText}>مشاركة</Text></Pressable><Pressable disabled={!canSend} onPress={() => send("copy")} style={[styles.outlineButton, !canSend && styles.disabled]}><Text style={styles.outlineText}>نسخ</Text></Pressable></View></View> : null}
   </ScrollView></ScreenContainer>;
 }
